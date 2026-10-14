@@ -1,0 +1,2108 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Aplikasi Perangkum Materi & Latihan Soal</title>
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Mammoth.js untuk Word -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- Tesseract.js untuk OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        h3 {
+            color: #333;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #777;
+            margin-bottom: 25px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 11px;
+            margin-top: 6px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 7px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn-ringkas {
+            background-color: #4CAF50;
+        }
+
+        .btn-soal {
+            background-color: #673ab7;
+        }
+
+        .btn-kamera {
+            background-color: #2196F3;
+        }
+
+        .btn-stop {
+            background-color: #f44336;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #namaFile {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 7px;
+            color: #555;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            color: #856404;
+            border-radius: 7px;
+        }
+
+        .hasil-box {
+            display: none;
+            margin-top: 20px;
+            padding: 18px;
+            background-color: #f1f3f5;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .soal {
+            background: white;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #673ab7;
+        }
+
+        .jawaban-benar {
+            color: #2e7d32;
+        }
+
+        .jawaban-salah {
+            color: #c62828;
+        }
+
+        video {
+            width: 100%;
+            max-height: 350px;
+            margin-top: 15px;
+            border-radius: 10px;
+            background: black;
+            display: none;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e3f2fd;
+            color: #1565c0;
+            border-radius: 7px;
+            font-size: 13px;
+        }
+
+        hr {
+            margin: 25px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📚 Aplikasi Belajar Pintar</h1>
+
+    <div class="subtitle">
+        Perangkum Materi & Latihan Soal
+    </div>
+
+
+    <!-- =================================================
+         UPLOAD MATERI
+    ================================================== -->
+
+    <label for="fileMateri">
+        📂 Upload Materi
+    </label>
+
+    <input
+        type="file"
+        id="fileMateri"
+        accept=".pdf,.docx,.jpg,.jpeg,.png"
+        onchange="tampilkanNamaFile()"
+    >
+
+    <div id="namaFile">
+        Belum ada file yang dipilih.
+    </div>
+
+    <div class="info">
+        Mendukung PDF, Word (.docx), JPG, JPEG, dan PNG.
+    </div>
+
+
+    <!-- =================================================
+         KAMERA
+    ================================================== -->
+
+    <label>
+        📷 Atau gunakan kamera
+    </label>
+
+    <button
+        class="btn-kamera"
+        onclick="bukaKamera()">
+
+        📷 Buka Kamera
+
+    </button>
+
+    <video
+        id="video"
+        autoplay>
+    </video>
+
+    <button
+        id="ambilFoto"
+        class="btn-kamera"
+        style="display:none"
+        onclick="ambilGambar()">
+
+        📸 Ambil Foto
+
+    </button>
+
+    <button
+        id="tutupKamera"
+        class="btn-stop"
+        style="display:none"
+        onclick="tutupKamera()">
+
+        ✖ Tutup Kamera
+
+    </button>
+
+    <canvas id="canvas"></canvas>
+
+
+    <!-- =================================================
+         RINGKASAN MATERI
+    ================================================== -->
+
+    <hr>
+
+    <h3>📝 Ringkas Materi</h3>
+
+    <label for="format">
+        Format Ringkasan
+    </label>
+
+    <select id="format">
+
+        <option value="poin">
+            Poin-poin Penting
+        </option>
+
+        <option value="paragraf">
+            Paragraf Singkat & Padat
+        </option>
+
+        <option value="santai">
+            Bahasa Santai & Mudah Dipahami
+        </option>
+
+    </select>
+
+
+    <button
+        class="btn-ringkas"
+        onclick="ringkasMateri()">
+
+        📝 Ringkas Materi
+
+    </button>
+
+
+    <!-- =================================================
+         LATIHAN SOAL
+    ================================================== -->
+
+    <hr>
+
+    <h3>❓ Latihan Soal</h3>
+
+    <label for="jumlahSoal">
+        Jumlah Soal
+    </label>
+
+    <select id="jumlahSoal">
+
+        <option value="5">
+            5 Soal
+        </option>
+
+        <option value="10">
+            10 Soal
+        </option>
+
+        <option value="15">
+            15 Soal
+        </option>
+
+    </select>
+
+
+    <label for="jenisSoal">
+        Jenis Soal
+    </label>
+
+    <select id="jenisSoal">
+
+        <option value="pilihan">
+            Pilihan Ganda
+        </option>
+
+        <option value="benar">
+            Benar / Salah
+        </option>
+
+        <option value="isian">
+            Isian Singkat
+        </option>
+
+    </select>
+
+
+    <button
+        class="btn-soal"
+        onclick="buatLatihanSoal()">
+
+        ❓ Mulai Latihan Soal
+
+    </button>
+
+
+    <!-- =================================================
+         LOADING
+    ================================================== -->
+
+    <div id="loading">
+        ⏳ Sedang memproses materi...
+    </div>
+
+
+    <!-- =================================================
+         HASIL RINGKASAN
+    ================================================== -->
+
+    <div
+        id="hasil"
+        class="hasil-box">
+    </div>
+
+
+    <!-- =================================================
+         HASIL LATIHAN
+    ================================================== -->
+
+    <div
+        id="hasilSoal"
+        class="hasil-box">
+    </div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   VARIABEL
+===================================================== */
+
+let seluruhTeks = "";
+
+let streamKamera = null;
+
+let daftarSoal = [];
+
+let jawabanPengguna = [];
+
+
+/* =====================================================
+   MENAMPILKAN NAMA FILE
+===================================================== */
+
+function tampilkanNamaFile() {
+
+    const input =
+        document.getElementById("fileMateri");
+
+    const nama =
+        document.getElementById("namaFile");
+
+
+    if (input.files.length > 0) {
+
+        nama.innerText =
+            "📄 File dipilih: " +
+            input.files[0].name;
+
+        seluruhTeks = "";
+
+    } else {
+
+        nama.innerText =
+            "Belum ada file yang dipilih.";
+
+    }
+
+}
+
+
+/* =====================================================
+   MEMBACA FILE
+===================================================== */
+
+async function bacaFile() {
+
+    const input =
+        document.getElementById("fileMateri");
+
+
+    if (input.files.length === 0) {
+
+        throw new Error(
+            "Silakan upload materi terlebih dahulu."
+        );
+
+    }
+
+
+    const file =
+        input.files[0];
+
+    const namaFile =
+        file.name.toLowerCase();
+
+
+    /* ================= PDF ================= */
+
+    if (
+        file.type === "application/pdf" ||
+        namaFile.endsWith(".pdf")
+    ) {
+
+        const arrayBuffer =
+            await file.arrayBuffer();
+
+        const pdf =
+            await pdfjsLib
+                .getDocument({
+                    data: arrayBuffer
+                })
+                .promise;
+
+
+        let teks = "";
+
+
+        for (
+            let halaman = 1;
+            halaman <= pdf.numPages;
+            halaman++
+        ) {
+
+            const page =
+                await pdf.getPage(halaman);
+
+            const textContent =
+                await page.getTextContent();
+
+
+            const teksHalaman =
+                textContent.items
+                    .map(item => item.str)
+                    .join(" ");
+
+
+            teks +=
+                teksHalaman + " ";
+
+        }
+
+
+        return teks;
+    }
+
+
+    /* ================= WORD ================= */
+
+    if (
+        namaFile.endsWith(".docx")
+    ) {
+
+        const arrayBuffer =
+            await file.arrayBuffer();
+
+
+        const hasil =
+            await mammoth.extractRawText({
+                arrayBuffer: arrayBuffer
+            });
+
+
+        return hasil.value;
+    }
+
+
+    /* ================= GAMBAR ================= */
+
+    if (
+        file.type.startsWith("image/")
+    ) {
+
+        return await lakukanOCR(file);
+
+    }
+
+
+    throw new Error(
+        "Format file tidak didukung."
+    );
+
+}
+
+
+/* =====================================================
+   OCR
+===================================================== */
+
+async function lakukanOCR(file) {
+
+    const loading =
+        document.getElementById("loading");
+
+
+    loading.innerText =
+        "🔎 Membaca teks dari gambar...";
+
+
+    const hasil =
+        await Tesseract.recognize(
+            file,
+            "ind",
+            {
+
+                logger: info => {
+
+                    if (
+                        info.status ===
+                        "recognizing text"
+                    ) {
+
+                        const persen =
+                            Math.round(
+                                info.progress * 100
+                            );
+
+
+                        loading.innerText =
+                            "🔎 Membaca gambar... " +
+                            persen +
+                            "%";
+
+                    }
+
+                }
+
+            }
+        );
+
+
+    return hasil.data.text;
+
+}
+
+
+/* =====================================================
+   RINGKAS MATERI
+===================================================== */
+
+async function ringkasMateri() {
+
+    const format =
+        document.getElementById(
+            "format"
+        ).value;
+
+
+    const hasil =
+        document.getElementById(
+            "hasil"
+        );
+
+
+    const loading =
+        document.getElementById(
+            "loading"
+        );
+
+
+    loading.innerText =
+        "📖 Membaca dan meringkas materi...";
+
+
+    loading.style.display =
+        "block";
+
+
+    hasil.style.display =
+        "none";
+
+
+    try {
+
+        if (
+            !seluruhTeks.trim()
+        ) {
+
+            seluruhTeks =
+                await bacaFile();
+
+        }
+
+
+        seluruhTeks =
+            seluruhTeks
+                .replace(/\s+/g, " ")
+                .trim();
+
+
+        if (
+            !seluruhTeks
+        ) {
+
+            throw new Error(
+                "Materi tidak memiliki teks yang dapat dibaca."
+            );
+
+        }
+
+
+        const ringkasan =
+            buatRingkasan(
+                seluruhTeks,
+                format
+            );
+
+
+        loading.style.display =
+            "none";
+
+
+        hasil.innerHTML =
+            "<strong>📌 Hasil Ringkasan:</strong><br><br>" +
+            ringkasan;
+
+
+        hasil.style.display =
+            "block";
+
+
+    } catch (error) {
+
+        loading.style.display =
+            "none";
+
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   FUNGSI RINGKASAN
+===================================================== */
+
+function buatRingkasan(
+    teks,
+    format
+) {
+
+    const kalimat =
+        teks
+            .split(/[.!?]+/)
+            .map(
+                k => k.trim()
+            )
+            .filter(
+                k => k.length > 30
+            );
+
+
+    if (
+        kalimat.length === 0
+    ) {
+
+        return "Materi terlalu pendek untuk diringkas.";
+
+    }
+
+
+    const jumlah =
+        Math.min(
+            7,
+            kalimat.length
+        );
+
+
+    const penting =
+        kalimat.slice(
+            0,
+            jumlah
+        );
+
+
+    /* POIN */
+
+    if (
+        format === "poin"
+    ) {
+
+        return penting
+            .map(
+                k => "• " + k + "."
+            )
+            .join(
+                "<br><br>"
+            );
+
+    }
+
+
+    /* PARAGRAF */
+
+    if (
+        format === "paragraf"
+    ) {
+
+        return penting
+            .map(
+                k => k + "."
+            )
+            .join(" ");
+
+    }
+
+
+    /* SANTAI */
+
+    if (
+        format === "santai"
+    ) {
+
+        return `
+            <p>
+                📖 Intinya, materi ini membahas:
+            </p>
+
+            ${penting
+                .slice(0, 5)
+                .map(
+                    k => "• " + k
+                )
+                .join("<br><br>")
+            }
+        `;
+
+    }
+
+}
+
+
+/* =====================================================
+   MEMBUAT LATIHAN SOAL (Diperbarui agar bervariasi)
+===================================================== */
+
+async function buatLatihanSoal() {
+
+    const jumlah =
+        parseInt(
+            document.getElementById(
+                "jumlahSoal"
+            ).value
+        );
+
+
+    const jenis =
+        document.getElementById(
+            "jenisSoal"
+        ).value;
+
+
+    const hasilSoal =
+        document.getElementById(
+            "hasilSoal"
+        );
+
+
+    const loading =
+        document.getElementById(
+            "loading"
+        );
+
+
+    loading.innerText =
+        "🧠 Sedang membuat latihan soal yang bervariasi...";
+
+
+    loading.style.display =
+        "block";
+
+
+    hasilSoal.style.display =
+        "none";
+
+
+    try {
+
+        if (
+            !seluruhTeks.trim()
+        ) {
+
+            seluruhTeks =
+                await bacaFile();
+
+        }
+
+
+        seluruhTeks =
+            seluruhTeks
+                .replace(/\s+/g, " ")
+                .trim();
+
+
+        const kalimat =
+            seluruhTeks
+                .split(/[.!?]+/)
+                .map(
+                    k => k.trim()
+                )
+                .filter(
+                    k => k.length > 30
+                );
+
+
+        if (
+            kalimat.length === 0
+        ) {
+
+            throw new Error(
+                "Materi terlalu pendek untuk dibuat latihan soal."
+            );
+
+        }
+
+
+        const jumlahSebenarnya =
+            Math.min(
+                jumlah,
+                kalimat.length
+            );
+
+
+        daftarSoal = [];
+
+        jawabanPengguna = [];
+
+
+        for (
+            let i = 0;
+            i < jumlahSebenarnya;
+            i++
+        ) {
+
+            const teksMateri = kalimat[i];
+
+            if (
+                jenis === "pilihan"
+            ) {
+
+                daftarSoal.push(
+                    buatPilihanGanda(
+                        teksMateri,
+                        i
+                    )
+                );
+
+            }
+
+            else if (
+                jenis === "benar"
+            ) {
+
+                daftarSoal.push(
+                    buatBenarSalah(
+                        teksMateri,
+                        i
+                    )
+                );
+
+            }
+
+            else if (
+                jenis === "isian"
+            ) {
+
+                daftarSoal.push(
+                    buatIsian(
+                        teksMateri,
+                        i
+                    )
+                );
+
+            }
+
+        }
+
+
+        loading.style.display =
+            "none";
+
+
+        tampilkanSoal();
+
+
+    } catch (error) {
+
+        loading.style.display =
+            "none";
+
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   PILIHAN GANDA (Variasi Pertanyaan dari Isi Materi)
+===================================================== */
+
+function buatPilihanGanda(
+    kalimat,
+    index
+) {
+
+    const kataKunci = ambilKataPenting(kalimat);
+    
+    const daftarPertanyaan = [
+        `Apa inti dari pembahasan mengenai: "${kataKunci}"?`,
+        `Berdasarkan isi teks, hal penting yang berkaitan dengan "${kataKunci}" adalah...`,
+        `Pernyataan manakah yang paling tepat menjelaskan konsep tentang "${kataKunci}" di atas?`,
+        `Dalam konteks materi tersebut, poin utama dari kalimat "${kalimat.slice(0, 40)}..." adalah...`
+    ];
+
+    const pertanyaanPilihan = daftarPertanyaan[index % daftarPertanyaan.length];
+
+    const pilihanSalah = [
+        `Konsep lain yang tidak dibahas dalam bab ini mengenai ${kataKunci}`,
+        `Pernyataan yang bertentangan dengan fungsi utama ${kataKunci}`,
+        `Kesimpulan keliru yang tidak sesuai dengan isi dokumen`
+    ];
+
+
+    let pilihan = [
+        kalimat,
+        ...pilihanSalah
+    ];
+
+
+    pilihan.sort(
+        () =>
+            Math.random() - 0.5
+    );
+
+
+    return {
+
+        tipe: "pilihan",
+
+        pertanyaan: pertanyaanPilihan,
+
+        pilihan: pilihan,
+
+        jawaban:
+            pilihan.indexOf(
+                kalimat
+            ),
+
+        penjelasan:
+            `Penjelasan: Kalimat atau konsep yang benar sesuai materi adalah "${kalimat}".`
+
+    };
+
+}
+
+
+/* =====================================================
+   BENAR / SALAH (Variasi Pernyataan)
+===================================================== */
+
+function buatBenarSalah(
+    kalimat,
+    nomor
+) {
+
+    const benar =
+        nomor % 2 === 0;
+
+    const daftarTanyaBS = [
+        "Tentukan apakah pernyataan berikut sesuai dengan isi materi:",
+        "Apakah fakta berikut ini benar berdasarkan dokumen yang diunggah?",
+        "Nilai kebenaran dari pernyataan berikut merujuk pada teks materi adalah:"
+    ];
+
+    const pertanyaanPilihan = daftarTanyaBS[nomor % daftarTanyaBS.length];
+
+
+    return {
+
+        tipe: "benar",
+
+        pertanyaan: pertanyaanPilihan,
+
+        pernyataan:
+            benar
+                ? kalimat
+                : "Tidak benar bahwa " + kalimat.toLowerCase(),
+
+        jawaban:
+            benar
+                ? "Benar"
+                : "Salah",
+
+        penjelasan:
+            benar
+                ? `Pernyataan ini valid dan termuat langsung di dalam materi.`
+                : `Pernyataan ini tidak tepat karena bertolak belakang dengan isi materi.`
+
+    };
+
+}
+
+
+/* =====================================================
+   ISIAN (Variasi Titik-titik / Melengkapi)
+===================================================== */
+
+function buatIsian(
+    kalimat,
+    nomor
+) {
+
+    const kata = ambilKataPenting(kalimat);
+
+    const daftarTanyaIsian = [
+        "Lengkapi bagian rumpang pada kalimat materi berikut:",
+        "Isilah kata atau frasa penting yang hilang dari materi berikut:",
+        "Lengkapi kalimat di bawah ini agar sesuai dengan dokumen:"
+    ];
+
+    const pertanyaanPilihan = daftarTanyaIsian[nomor % daftarTanyaIsian.length];
+
+    let teksRumpang = kalimat;
+    if (kalimat.includes(kata)) {
+        teksRumpang = kalimat.replace(kata, "__________");
+    } else {
+        const kataList = kalimat.split(" ");
+        if(kataList.length > 2) {
+            kataList[1] = "__________";
+            teksRumpang = kataList.join(" ");
+        }
+    }
+
+
+    return {
+
+        tipe: "isian",
+
+        pertanyaan: pertanyaanPilihan,
+
+        teks: teksRumpang,
+
+        jawaban:
+            kata,
+
+        penjelasan:
+            `Kata kunci yang dicari untuk melengkapi kalimat tersebut adalah "${kata}".`
+
+    };
+
+}
+
+
+/* =====================================================
+   MENAMPILKAN SOAL
+===================================================== */
+
+function tampilkanSoal() {
+
+    const hasilSoal =
+        document.getElementById(
+            "hasilSoal"
+        );
+
+
+    let html = `
+
+        <strong>
+            📝 Latihan Soal
+        </strong>
+
+        <p>
+            Kerjakan semua soal terlebih dahulu.
+            Jawaban benar dan pembahasan akan
+            muncul setelah kamu selesai.
+        </p>
+
+    `;
+
+
+    daftarSoal.forEach(
+        (soal, index) => {
+
+            html += `
+
+                <div class="soal">
+
+                    <strong>
+                        Soal ${index + 1}
+                    </strong>
+
+            `;
+
+
+            if (
+                soal.tipe === "pilihan"
+            ) {
+
+                html += `
+
+                    <p>
+                        ${soal.pertanyaan}
+                    </p>
+
+                `;
+
+
+                soal.pilihan.forEach(
+                    (
+                        pilihan,
+                        i
+                    ) => {
+
+                        html += `
+
+                            <label
+                                style="
+                                    font-weight:normal;
+                                    margin:10px 0;
+                                "
+                            >
+
+                                <input
+                                    type="radio"
+                                    name="soal${index}"
+                                    value="${i}"
+                                    style="width:auto;"
+                                >
+
+                                ${String.fromCharCode(
+                                    65 + i
+                                )}.
+                                ${pilihan}
+
+                            </label>
+
+                        `;
+
+                    }
+                );
+
+            }
+
+
+            else if (
+                soal.tipe === "benar"
+            ) {
+
+                html += `
+
+                    <p>
+                        ${soal.pertanyaan}
+                    </p>
+
+                    <p>
+                        "${soal.pernyataan}"
+                    </p>
+
+                    <label
+                        style="
+                            font-weight:normal;
+                            margin:10px 0;
+                        "
+                    >
+
+                        <input
+                            type="radio"
+                            name="soal${index}"
+                            value="Benar"
+                            style="width:auto;"
+                        >
+
+                        A. Benar
+
+                    </label>
+
+
+                    <label
+                        style="
+                            font-weight:normal;
+                            margin:10px 0;
+                        "
+                    >
+
+                        <input
+                            type="radio"
+                            name="soal${index}"
+                            value="Salah"
+                            style="width:auto;"
+                        >
+
+                        B. Salah
+
+                    </label>
+
+                `;
+
+            }
+
+
+            else if (
+                soal.tipe === "isian"
+            ) {
+
+                html += `
+
+                    <p>
+                        ${soal.pertanyaan}
+                    </p>
+
+                    <p>
+                        ${soal.teks}
+                    </p>
+
+                    <input
+                        type="text"
+                        id="isian${index}"
+                        placeholder="Tulis jawaban kamu..."
+                    >
+
+                `;
+
+            }
+
+
+            html += `
+                </div>
+            `;
+
+        }
+    );
+
+
+    html += `
+
+        <button
+            class="btn-soal"
+            onclick="periksaJawaban()"
+        >
+
+            ✅ Selesai & Periksa Jawaban
+
+        </button>
+
+    `;
+
+
+    hasilSoal.innerHTML =
+        html;
+
+
+    hasilSoal.style.display =
+        "block";
+
+
+    hasilSoal.scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+
+/* =====================================================
+   MEMERIKSA JAWABAN
+===================================================== */
+
+function periksaJawaban() {
+
+    let benar = 0;
+
+    let kosong = 0;
+
+
+    jawabanPengguna = [];
+
+
+    daftarSoal.forEach(
+        (
+            soal,
+            index
+        ) => {
+
+            let jawabanUser =
+                null;
+
+
+            if (
+                soal.tipe === "pilihan"
+            ) {
+
+                const pilihan =
+                    document.querySelector(
+                        `input[name="soal${index}"]:checked`
+                    );
+
+
+                if (pilihan) {
+
+                    jawabanUser =
+                        parseInt(
+                            pilihan.value
+                        );
+
+                }
+
+            }
+
+
+            else if (
+                soal.tipe === "benar"
+            ) {
+
+                const pilihan =
+                    document.querySelector(
+                        `input[name="soal${index}"]:checked`
+                    );
+
+
+                if (pilihan) {
+
+                    jawabanUser =
+                        pilihan.value;
+
+                }
+
+            }
+
+
+            else if (
+                soal.tipe === "isian"
+            ) {
+
+                const input =
+                    document.getElementById(
+                        `isian${index}`
+                    );
+
+
+                if (
+                    input &&
+                    input.value.trim()
+                ) {
+
+                    jawabanUser =
+                        input.value.trim();
+
+                }
+
+            }
+
+
+            if (
+                jawabanUser === null
+            ) {
+
+                kosong++;
+
+            }
+
+
+            jawabanPengguna.push(
+                jawabanUser
+            );
+
+
+            if (
+                cekJawaban(
+                    soal,
+                    jawabanUser
+                )
+            ) {
+
+                benar++;
+
+            }
+
+        }
+    );
+
+
+    const total =
+        daftarSoal.length;
+
+
+    const salah =
+        total -
+        benar -
+        kosong;
+
+
+    const nilai =
+        Math.round(
+            (benar / total) * 100
+        );
+
+
+    tampilkanHasilAkhir(
+        benar,
+        salah,
+        kosong,
+        nilai
+    );
+
+}
+
+
+/* =====================================================
+   CEK JAWABAN
+===================================================== */
+
+function cekJawaban(
+    soal,
+    jawabanUser
+) {
+
+    if (
+        jawabanUser === null
+    ) {
+
+        return false;
+
+    }
+
+
+    if (
+        soal.tipe === "pilihan"
+    ) {
+
+        return (
+            jawabanUser ===
+            soal.jawaban
+        );
+
+    }
+
+
+    if (
+        soal.tipe === "benar"
+    ) {
+
+        return (
+            jawabanUser ===
+            soal.jawaban
+        );
+
+    }
+
+
+    if (
+        soal.tipe === "isian"
+    ) {
+
+        return (
+            normalisasi(
+                jawabanUser
+            ) ===
+            normalisasi(
+                soal.jawaban
+            )
+        );
+
+    }
+
+
+    return false;
+
+}
+
+
+/* =====================================================
+   NORMALISASI
+===================================================== */
+
+function normalisasi(
+    teks
+) {
+
+    return teks
+        .toLowerCase()
+        .replace(
+            /[.,!?]/g,
+            ""
+        )
+        .replace(
+            /\s+/g,
+            " "
+        )
+        .trim();
+
+}
+
+
+/* =====================================================
+   HASIL AKHIR
+===================================================== */
+
+function tampilkanHasilAkhir(
+    benar,
+    salah,
+    kosong,
+    nilai
+) {
+
+    const hasilSoal =
+        document.getElementById(
+            "hasilSoal"
+        );
+
+
+    let html = `
+
+        <div
+            style="
+                background:#e8f5e9;
+                padding:20px;
+                border-radius:10px;
+                text-align:center;
+            "
+        >
+
+            <h2>
+                🎉 Latihan Selesai!
+            </h2>
+
+            <h1>
+                ${nilai}
+            </h1>
+
+            <p>
+                <strong>Nilai</strong>
+            </p>
+
+            <p>
+                ✅ Benar: ${benar}
+            </p>
+
+            <p>
+                ❌ Salah: ${salah}
+            </p>
+
+            <p>
+                ⚪ Tidak dijawab: ${kosong}
+            </p>
+
+        </div>
+
+        <hr>
+
+        <h3>
+            📖 Pembahasan
+        </h3>
+
+    `;
+
+
+    daftarSoal.forEach(
+        (
+            soal,
+            index
+        ) => {
+
+            const user =
+                jawabanPengguna[
+                    index
+                ];
+
+
+            const benarSoal =
+                cekJawaban(
+                    soal,
+                    user
+                );
+
+
+            html += `
+
+                <div
+                    class="soal"
+                    style="
+                        border-left:5px solid
+                        ${
+                            benarSoal
+                                ? "#4CAF50"
+                                : "#f44336"
+                        };
+                    "
+                >
+
+                    <strong>
+                        Soal ${index + 1}
+                    </strong>
+
+            `;
+
+
+            if (
+                benarSoal
+            ) {
+
+                html += `
+
+                    <p class="jawaban-benar">
+
+                        ✅ Jawaban kamu benar!
+
+                    </p>
+
+                `;
+
+            }
+
+            else {
+
+                html += `
+
+                    <p class="jawaban-salah">
+
+                        ❌ Jawaban kamu salah.
+
+                    </p>
+
+                `;
+
+            }
+
+
+            html += `
+
+                <p>
+
+                    <strong>
+                        Jawaban kamu:
+                    </strong>
+
+                    ${
+                        user === null ||
+                        user === ""
+                            ? "Tidak dijawab"
+                            : tampilkanJawaban(
+                                soal,
+                                user
+                            )
+                    }
+
+                </p>
+
+            `;
+
+
+            if (
+                !benarSoal
+            ) {
+
+                html += `
+
+                    <p class="jawaban-benar">
+
+                        <strong>
+                            ✅ Jawaban yang benar:
+                        </strong>
+
+                        ${tampilkanJawabanBenar(
+                            soal
+                        )}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            💡 Pembahasan:
+                        </strong>
+
+                        ${soal.penjelasan}
+
+                    </p>
+
+                `;
+
+            }
+
+
+            html += `
+                </div>
+            `;
+
+        }
+    );
+
+
+    html += `
+
+        <button
+            class="btn-soal"
+            onclick="buatLatihanSoal()"
+        >
+
+            🔄 Kerjakan Lagi
+
+        </button>
+
+    `;
+
+
+    hasilSoal.innerHTML =
+        html;
+
+
+    hasilSoal.style.display =
+        "block";
+
+
+    hasilSoal.scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+
+/* =====================================================
+   TAMPILKAN JAWABAN PENGGUNA
+===================================================== */
+
+function tampilkanJawaban(
+    soal,
+    jawaban
+) {
+
+    if (
+        soal.tipe === "pilihan"
+    ) {
+
+        return (
+
+            String.fromCharCode(
+                65 + jawaban
+            ) +
+            ". " +
+            soal.pilihan[
+                jawaban
+            ]
+
+        );
+
+    }
+
+
+    return jawaban;
+
+}
+
+
+/* =====================================================
+   TAMPILKAN JAWABAN BENAR
+===================================================== */
+
+function tampilkanJawabanBenar(
+    soal
+) {
+
+    if (
+        soal.tipe === "pilihan"
+    ) {
+
+        return (
+
+            String.fromCharCode(
+                65 + soal.jawaban
+            ) +
+            ". " +
+            soal.pilihan[
+                soal.jawaban
+            ]
+
+        );
+
+    }
+
+
+    return soal.jawaban;
+
+}
+
+
+/* =====================================================
+   AMBIL KATA PENTING
+===================================================== */
+
+function ambilKataPenting(
+    kalimat
+) {
+
+    const kata =
+        kalimat
+            .split(/\s+/)
+            .filter(
+                k => k.length > 5
+            );
+
+
+    if (
+        kata.length === 0
+    ) {
+
+        return kalimat
+            .split(/\s+/)
+            .slice(
+                0,
+                4
+            )
+            .join(" ");
+
+    }
+
+
+    return kata
+        .slice(
+            0,
+            5
+        )
+        .join(" ");
+
+}
+
+
+/* =====================================================
+   KAMERA
+===================================================== */
+
+async function bukaKamera() {
+
+    const video =
+        document.getElementById(
+            "video"
+        );
+
+
+    try {
+
+        streamKamera =
+            await navigator.mediaDevices
+                .getUserMedia({
+
+                    video: {
+                        facingMode:
+                            "environment"
+                    },
+
+                    audio: false
+
+                });
+
+
+        video.srcObject =
+            streamKamera;
+
+
+        video.style.display =
+            "block";
+
+
+        document.getElementById(
+            "ambilFoto"
+        ).style.display =
+            "block";
+
+
+        document.getElementById(
+            "tutupKamera"
+        ).style.display =
+            "block";
+
+
+    } catch (error) {
+
+        alert(
+            "Kamera tidak dapat dibuka. Pastikan izin kamera diberikan."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   AMBIL FOTO
+===================================================== */
+
+async function ambilGambar() {
+
+    const video =
+        document.getElementById(
+            "video"
+        );
+
+
+    const canvas =
+        document.getElementById(
+            "canvas"
+        );
+
+
+    canvas.width =
+        video.videoWidth;
+
+
+    canvas.height =
+        video.videoHeight;
+
+
+    const context =
+        canvas.getContext(
+            "2d"
+        );
+
+
+    context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    canvas.toBlob(
+        async function(blob) {
+
+            const file =
+                new File(
+                    [blob],
+                    "foto-kamera.jpg",
+                    {
+                        type:
+                            "image/jpeg"
+                    }
+                );
+
+
+            const input =
+                document.getElementById(
+                    "fileMateri"
+                );
+
+
+            const dataTransfer =
+                new DataTransfer();
+
+
+            dataTransfer.items.add(
+                file
+            );
+
+
+            input.files =
+                dataTransfer.files;
+
+
+            document.getElementById(
+                "namaFile"
+            ).innerText =
+                "📷 Foto dari kamera siap digunakan.";
+
+
+            seluruhTeks = "";
+
+
+            tutupKamera();
+
+
+            alert(
+                "Foto berhasil diambil. Sekarang kamu bisa merangkum materi atau membuat latihan soal."
+            );
+
+        },
+
+        "image/jpeg",
+
+        0.9
+
+    );
+
+}
+
+
+/* =====================================================
+   TUTUP KAMERA
+===================================================== */
+
+function tutupKamera() {
+
+    const video =
+        document.getElementById(
+            "video"
+        );
+
+
+    if (
+        streamKamera
+    ) {
+
+        streamKamera
+            .getTracks()
+            .forEach(
+                track =>
+                    track.stop()
+            );
+
+
+        streamKamera = null;
+
+    }
+
+
+    video.srcObject =
+        null;
+
+
+    video.style.display =
+        "none";
+
+
+    document.getElementById(
+        "ambilFoto"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "tutupKamera"
+    ).style.display =
+        "none";
+
+}
+
+</script>
+
+</body>
+</html>
+
+```
